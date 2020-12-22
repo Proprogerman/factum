@@ -167,14 +167,19 @@ class _ResultScreenState extends State<ResultScreen>
                   children: [
                     FloatingActionButton(
                       heroTag: null,
+                      backgroundColor:
+                          isFirstResult ? null : Theme.of(context).primaryColor,
                       child: Transform(
-                          transform: Matrix4.rotationY(pi),
-                          alignment: Alignment.center,
-                          child: Icon(Icons.forward)),
+                        transform: Matrix4.rotationY(pi),
+                        alignment: Alignment.center,
+                        child: Icon(Icons.forward),
+                      ),
                       onPressed: isFirstResult ? null : () => this.prevResult(),
                     ),
                     FloatingActionButton(
                       heroTag: null,
+                      backgroundColor:
+                          isLastResult ? null : Theme.of(context).primaryColor,
                       child: Icon(Icons.forward),
                       onPressed: isLastResult ? null : () => this.nextResult(),
                     )

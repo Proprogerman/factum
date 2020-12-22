@@ -125,7 +125,6 @@ class MatchAllFriendsModeModel extends MatchAllModeModel {
         await rootBundle.loadString('test_data/local_game_data/players.json'));
     _players =
         testPlayersList.map((data) => PlayerData.fromJson(data)).toList();
-    print('playersCount:${_players.length}');
   }
 
   void addPlayer(PlayerData player) => _players.add(player);

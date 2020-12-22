@@ -43,27 +43,35 @@ class _PlayersScreenState extends State<PlayersScreen> with RouteAware {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
+              margin: EdgeInsets.symmetric(vertical: 6.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       'Игроки',
                       style: Theme.of(context).textTheme.headline4,
                     ),
-                    RaisedButton(
-                      child: Icon(Icons.add),
+                    RawMaterialButton(
+                      constraints: BoxConstraints(minWidth: 40.0),
+                      fillColor: Theme.of(context).buttonColor,
+                      elevation: 2.0,
+                      shape: CircleBorder(),
+                      padding: EdgeInsets.all(8.0),
                       onPressed: () {
                         Navigator.of(context).pushNamed('/add_player');
                       },
+                      child: Icon(
+                        Icons.add,
+                        size: 36.0,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 8.0),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: SingleChildScrollView(

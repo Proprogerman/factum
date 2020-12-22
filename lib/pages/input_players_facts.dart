@@ -24,7 +24,7 @@ class InputPlayersFacts extends StatelessWidget {
       player: currentPlayer,
       child: InputPlayerDataScreen(
         image: currentPlayer.image,
-        inputTitle: 'Введи факт о себе',
+        inputMode: InputPlayerDataScreenMode.factInput,
       ),
     );
   }

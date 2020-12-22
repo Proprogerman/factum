@@ -57,29 +57,33 @@ class AddPlayerScreenState extends State<AddPlayerScreen> {
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height -
                 Scaffold.of(context).appBarMaxHeight,
-            child: Center(
-              child: FutureBuilder<void>(
-                future: _initializeControllerFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done &&
-                      _controller.value != null &&
-                      _controller.value.isInitialized) {
-                    return ClipOval(
-                      clipper: CameraCircleClipper(),
-                      child: AspectRatio(
-                          aspectRatio: _controller.value.aspectRatio,
-                          child: CameraPreview(_controller)),
-                    );
-                  } else {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                },
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: Center(
+                child: FutureBuilder<void>(
+                  future: _initializeControllerFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done &&
+                        _controller.value != null &&
+                        _controller.value.isInitialized) {
+                      return ClipOval(
+                        clipper: CameraCircleClipper(),
+                        child: AspectRatio(
+                            aspectRatio: _controller.value.aspectRatio,
+                            child: CameraPreview(_controller)),
+                      );
+                    } else {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
               ),
             ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).primaryColor,
         child: Icon(Icons.camera_alt),
         onPressed: () => _addPlayerAction(),
       ),
@@ -98,7 +102,7 @@ class AddPlayerScreenState extends State<AddPlayerScreen> {
         context,
         PageRouteBuilder(
           pageBuilder: (context, _, __) => InputPlayerDataScreen(
-            inputTitle: 'Введи своё имя',
+            inputMode: InputPlayerDataScreenMode.nameInput,
             image: Image.file(File(path)),
           ),
           transitionDuration: Duration(seconds: 0),
