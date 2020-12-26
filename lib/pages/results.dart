@@ -1,7 +1,8 @@
 import 'dart:math';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:factum/models/match_all_mode_model.dart';
-import 'package:factum/pages/input_player_data.dart';
+import 'package:factum/widgets/input_player_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +32,7 @@ class _ResultScreenState extends State<ResultScreen>
         .getPlayersResults();
     _controller =
         AnimationController(duration: Duration(seconds: 5), vsync: this);
-    _animation = _controller.drive(Tween<double>(begin: 1.0, end: 1.5));
+    _animation = _controller.drive(Tween<double>(begin: 1.0, end: 2.0));
     _controller.forward();
   }
 
@@ -94,7 +95,7 @@ class _ResultScreenState extends State<ResultScreen>
                       height: MediaQuery.of(context).size.height,
                       child: Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 32.0, vertical: 132.0),
+                            horizontal: 28.0, vertical: 124.0),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.6),
@@ -104,47 +105,72 @@ class _ResultScreenState extends State<ResultScreen>
                           child: Container(
                             margin: EdgeInsets.all(13.0),
                             child: Column(
+                              mainAxisSize: MainAxisSize.max,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Flexible(
-                                  flex: 2,
-                                  fit: FlexFit.tight,
-                                  child: RichText(
-                                    textAlign: TextAlign.left,
-                                    text: TextSpan(
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headline4
-                                          .copyWith(color: Colors.white),
-                                      children: <TextSpan>[
-                                        TextSpan(text: 'Игрок '),
-                                        TextSpan(
-                                          text:
-                                              '${currentResult.player.name}\n',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline4
-                                              .copyWith(
-                                                  color: Theme.of(context)
-                                                      .accentColor),
-                                        ),
-                                        TextSpan(
-                                            text: '${currentResult.fact}\n\n'),
-                                        TextSpan(
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headline5,
-                                            text:
-                                                '${currentResult.achievement}\n'),
-                                      ],
-                                    ),
+                                AutoSizeText.rich(
+                                  TextSpan(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headline4
+                                        .copyWith(color: Colors.white),
+                                    children: <TextSpan>[
+                                      TextSpan(text: 'Игрок '),
+                                      TextSpan(
+                                        text: '${currentResult.player.name}\n',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline4
+                                            .copyWith(
+                                                color: Theme.of(context)
+                                                    .accentColor),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Spacer(flex: 1),
-                                Flexible(
-                                  flex: 1,
-                                  fit: FlexFit.tight,
+                                Divider(color: Colors.white),
+                                AutoSizeText.rich(
+                                  TextSpan(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headline4
+                                        .copyWith(color: Colors.white),
+                                    children: <TextSpan>[
+                                      TextSpan(text: '\u00AB'),
+                                      TextSpan(
+                                        text: '${currentResult.fact}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline4
+                                            .copyWith(
+                                                color: Theme.of(context)
+                                                    .accentColor),
+                                      ),
+                                      TextSpan(text: '\u00BB'),
+                                    ],
+                                  ),
+                                ),
+                                AutoSizeText.rich(
+                                  TextSpan(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headline4
+                                        .copyWith(color: Colors.white),
+                                    children: <TextSpan>[
+                                      TextSpan(
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5,
+                                        text: '${currentResult.achievement}',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Spacer(),
+                                //TODO:решить проблему с вёрсткой
+                                SizedBox(
+                                  height: 100,
                                   child: PlayersKnowYouList(
                                       currentResult.playersKnowYou),
                                 ),
@@ -205,27 +231,46 @@ class PlayersKnowYouList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            flex: 10,
-            child: Text('Угадавшие игроки:',
-                textAlign: TextAlign.start,
-                style: Theme.of(context).textTheme.headline6),
-          ),
-          Spacer(flex: 1),
-          Flexible(
-            flex: 10,
-            child: ListView(
+          Text('Угадали:',
+              textAlign: TextAlign.start,
+              style: Theme.of(context).textTheme.headline6),
+          SizedBox(height: 4.0),
+          Expanded(
+            child: ListView.separated(
+              itemCount: players.length,
               scrollDirection: Axis.horizontal,
-              children: [
-                for (var player in players)
-                  ClipOval(
-                    clipper: CameraCircleClipper(),
-                    child: Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.rotationY(pi),
-                        child: player.image),
-                  )
-              ],
+              separatorBuilder: (_, __) => SizedBox(width: 8.0),
+              itemBuilder: (_, index) {
+                return SizedBox(
+                  width: 54,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipOval(
+                        clipper: CameraCircleClipper(),
+                        child: Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.rotationY(pi),
+                            child: SizedBox(
+                              height: 54,
+                              width: 54,
+                              child: FittedBox(
+                                fit: BoxFit.cover,
+                                child: players[index].image,
+                              ),
+                            )),
+                      ),
+                      Expanded(
+                        child: Text(
+                          players[index].name,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

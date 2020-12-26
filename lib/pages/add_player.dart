@@ -8,7 +8,7 @@ import 'dart:async';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 
-import 'input_player_data.dart';
+import '../widgets/input_player_data.dart';
 
 class AddPlayerScreen extends StatefulWidget {
   const AddPlayerScreen({Key key}) : super(key: key);

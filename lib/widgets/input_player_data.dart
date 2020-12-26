@@ -51,7 +51,7 @@ class _InputPlayerDataScreenState extends State<InputPlayerDataScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 30.0),
               child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.25,
+                height: MediaQuery.of(context).size.height * 0.5,
                 child: IntrinsicHeight(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),

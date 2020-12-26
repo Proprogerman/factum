@@ -1,9 +1,10 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:factum/models/match_all_mode_model.dart';
 import 'package:factum/pages/input_players_facts.dart';
+import 'package:factum/widgets/wait_next_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_reorderable_list/flutter_reorderable_list.dart';
@@ -210,7 +211,7 @@ class PlayerListItem extends StatelessWidget {
       child: Opacity(
         opacity: state == ReorderableItemState.placeholder ? 0.0 : 1.0,
         child: SizedBox(
-          height: 125,
+          height: MediaQuery.of(context).size.width / 2.5,
           width: double.infinity,
           child: Stack(
             fit: StackFit.expand,
@@ -226,13 +227,12 @@ class PlayerListItem extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      end: FractionalOffset.bottomCenter,
-                      begin: FractionalOffset.center,
+                      begin: Alignment(.0, 0.8),
+                      end: Alignment(.0, 0.3),
                       colors: [
-                        Colors.grey.withOpacity(0.0),
                         Colors.black.withOpacity(0.5),
+                        Colors.black.withOpacity(0.0),
                       ],
-                      stops: [0.0, 0.65],
                     ),
                   ),
                 ),
@@ -240,9 +240,14 @@ class PlayerListItem extends StatelessWidget {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: 8.0),
+                  padding: EdgeInsets.all(8.0),
                   child: Container(
-                    child: Text(player.name),
+                    child: Text(
+                      player.name,
+                      style: Theme.of(context).textTheme.subtitle1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               ),
@@ -272,7 +277,7 @@ class FactListItem extends StatelessWidget {
       child: Opacity(
         opacity: state == ReorderableItemState.placeholder ? 0.0 : 1.0,
         child: SizedBox(
-          height: 125,
+          height: MediaQuery.of(context).size.width / 2.5,
           width: double.infinity,
           child: DecoratedBox(
               decoration: BoxDecoration(
@@ -287,9 +292,14 @@ class FactListItem extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: Text(fact,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: AutoSizeText(
+                    fact,
                     style: Theme.of(context).textTheme.headline5,
-                    textAlign: TextAlign.center),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               )),
         ),
       ),
