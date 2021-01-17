@@ -8,6 +8,7 @@ import 'package:factum/widgets/wait_next_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_reorderable_list/flutter_reorderable_list.dart';
+import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 class MatchAllGame extends StatelessWidget {
@@ -39,12 +40,15 @@ class _MatchAllState extends State<MatchAll> {
   List<MapEntry<int, PlayerData>> _players;
   List<MapEntry<int, String>> _facts;
 
-  final playersScrollController = ScrollController();
-  final factsScrollController = ScrollController();
+  LinkedScrollControllerGroup _controllers;
+  ScrollController _pController, _fController;
 
   @override
   void initState() {
     super.initState();
+    _controllers = LinkedScrollControllerGroup();
+    _pController = _controllers.addAndGet();
+    _fController = _controllers.addAndGet();
     var questions = Provider.of<MatchAllFriendsNotifier>(context, listen: false)
         .model
         .getQuestions();
@@ -54,8 +58,8 @@ class _MatchAllState extends State<MatchAll> {
 
   @override
   void dispose() {
-    playersScrollController.dispose();
-    factsScrollController.dispose();
+    _pController.dispose();
+    _fController.dispose();
     super.dispose();
   }
 
@@ -108,75 +112,71 @@ class _MatchAllState extends State<MatchAll> {
         child: Column(
           children: [
             Expanded(
-              child: CustomScrollView(
-                shrinkWrap: true,
-                slivers: [
-                  SliverFillRemaining(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: ReorderableList(
-                            onReorder: this._reorderPlayerCallback,
-                            child: CustomScrollView(
-                              physics: NeverScrollableScrollPhysics(),
-                              slivers: <Widget>[
-                                SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (BuildContext context, int index) {
-                                      return ReorderableItem(
-                                        key: ValueKey(_players[index]),
-                                        childBuilder: (context, state) {
-                                          return PlayerListItem(
-                                            player: _players[index].value,
-                                            state: state,
-                                          );
-                                        },
-                                      );
-                                    },
-                                    childCount: _players.length,
-                                  ),
-                                ),
-                              ],
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: ReorderableList(
+                      onReorder: this._reorderPlayerCallback,
+                      child: CustomScrollView(
+                        key: ValueKey('playerList'),
+                        controller: _pController,
+                        slivers: <Widget>[
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (BuildContext context, int index) {
+                                return ReorderableItem(
+                                  key: ValueKey(_players[index]),
+                                  childBuilder: (context, state) {
+                                    return PlayerListItem(
+                                      player: _players[index].value,
+                                      state: state,
+                                    );
+                                  },
+                                );
+                              },
+                              childCount: _players.length,
                             ),
                           ),
-                        ),
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: ReorderableList(
-                            onReorder: this._reorderFactCallback,
-                            child: CustomScrollView(
-                              physics: NeverScrollableScrollPhysics(),
-                              slivers: <Widget>[
-                                SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (BuildContext context, int index) {
-                                      return ReorderableItem(
-                                        key: ValueKey(_facts[index]),
-                                        childBuilder: (context, state) {
-                                          return FactListItem(
-                                            isFirst: index == 0,
-                                            isLast: index == _facts.length - 1,
-                                            fact: _facts[index].value,
-                                            state: state,
-                                          );
-                                        },
-                                      );
-                                    },
-                                    childCount: _facts.length,
-                                  ),
-                                ),
-                              ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: ReorderableList(
+                      onReorder: this._reorderFactCallback,
+                      child: CustomScrollView(
+                        key: ValueKey('factList'),
+                        controller: _fController,
+                        slivers: <Widget>[
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (BuildContext context, int index) {
+                                return ReorderableItem(
+                                  key: ValueKey(_facts[index]),
+                                  childBuilder: (context, state) {
+                                    return FactListItem(
+                                      isFirst: index == 0,
+                                      isLast: index == _facts.length - 1,
+                                      fact: _facts[index].value,
+                                      state: state,
+                                    );
+                                  },
+                                );
+                              },
+                              childCount: _facts.length,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+            SizedBox(height: 16.0),
             Center(
               child: ButtonTheme(
                   minWidth: 200,
@@ -192,7 +192,7 @@ class _MatchAllState extends State<MatchAll> {
                     onPressed: () => _doneCallback(context),
                   )),
             ),
-            SizedBox(height: 33.0),
+            SizedBox(height: 16.0),
           ],
         ),
       ),
