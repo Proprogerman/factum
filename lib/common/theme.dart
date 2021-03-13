@@ -8,7 +8,7 @@ final appTheme = ThemeData(
     primaryColor: Colors.deepPurple[500],
     primaryColorLight: Colors.deepPurple[400],
     primaryColorDark: Colors.deepPurple[900],
-    cardColor: Colors.deepPurple[400],
+    // cardColor: Colors.deepPurple[400],
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       disabledElevation: 0.0,
     ));

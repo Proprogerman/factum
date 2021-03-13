@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:factum/models/match_all_mode_model.dart';
 import 'package:factum/pages/input_players_facts.dart';
+import 'package:factum/widgets/matchable_lists.dart';
 import 'package:factum/widgets/wait_next_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -111,71 +112,7 @@ class _MatchAllState extends State<MatchAll> {
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: ReorderableList(
-                      onReorder: this._reorderPlayerCallback,
-                      child: CustomScrollView(
-                        key: ValueKey('playerList'),
-                        controller: _pController,
-                        slivers: <Widget>[
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (BuildContext context, int index) {
-                                return ReorderableItem(
-                                  key: ValueKey(_players[index]),
-                                  childBuilder: (context, state) {
-                                    return PlayerListItem(
-                                      player: _players[index].value,
-                                      state: state,
-                                    );
-                                  },
-                                );
-                              },
-                              childCount: _players.length,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: ReorderableList(
-                      onReorder: this._reorderFactCallback,
-                      child: CustomScrollView(
-                        key: ValueKey('factList'),
-                        controller: _fController,
-                        slivers: <Widget>[
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (BuildContext context, int index) {
-                                return ReorderableItem(
-                                  key: ValueKey(_facts[index]),
-                                  childBuilder: (context, state) {
-                                    return FactListItem(
-                                      isFirst: index == 0,
-                                      isLast: index == _facts.length - 1,
-                                      fact: _facts[index].value,
-                                      state: state,
-                                    );
-                                  },
-                                );
-                              },
-                              childCount: _facts.length,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            Expanded(child: MatchableLists(players: _players, facts: _facts)),
             SizedBox(height: 16.0),
             Center(
               child: ButtonTheme(
@@ -200,108 +137,303 @@ class _MatchAllState extends State<MatchAll> {
   }
 }
 
-class PlayerListItem extends StatelessWidget {
-  final ReorderableItemState state;
-  final PlayerData player;
-  PlayerListItem({@required this.player, @required this.state});
+enum ItemType { playerItem, factItem }
 
+class MatchItemData {
+  int index;
+  ItemType type;
+  MatchItemData(this.index, this.type);
+  @override
+  bool operator ==(other) =>
+      other is MatchItemData && index == other.index && type == other.type;
+  @override
+  int get hashCode => index.hashCode ^ type.hashCode;
+}
+
+class MatchableLists extends StatefulWidget {
+  final List<MapEntry<int, PlayerData>> players;
+  final List<MapEntry<int, String>> facts;
+  MatchableLists({@required this.players, @required this.facts});
+  @override
+  _MatchableListsState createState() => _MatchableListsState();
+}
+
+typedef ListItemTappedCallback = void Function(MatchItemData itemData);
+
+class _MatchableListsState extends State<MatchableLists> {
+  List<MapEntry<int, PlayerData>> _players;
+  List<MapEntry<int, String>> _facts;
+  List<MatchableItem> playerItems, factItems;
+
+  MatchItemData lastTappedItemData;
+
+  void _tapItemCallback(MatchItemData itemData) {
+    print('tapItemCallback (${itemData.index}, ${itemData.type.toString()})');
+    var currentList =
+        (itemData.type == ItemType.playerItem ? playerItems : factItems);
+    if (lastTappedItemData?.type == itemData.type) {
+      if (lastTappedItemData.index != itemData.index)
+        currentList[lastTappedItemData.index].setActive(false);
+    } else if (lastTappedItemData != null) {
+      swapItems(lastTappedItemData, itemData);
+      return;
+    }
+    if (lastTappedItemData != itemData) {
+      currentList[itemData.index].setActive(true);
+      lastTappedItemData = itemData;
+    } else {
+      currentList[itemData.index].setActive(false);
+      lastTappedItemData = null;
+    }
+  }
+
+  void swapItems(
+      MatchItemData targetItemData, MatchItemData subTargetItemData) {
+    var playerIndex = targetItemData.type == ItemType.playerItem
+        ? targetItemData.index
+        : subTargetItemData.index;
+    var factIndex = targetItemData.type == ItemType.factItem
+        ? targetItemData.index
+        : subTargetItemData.index;
+    if (playerIndex == factIndex) return;
+    playerItems[playerIndex].setActive(false);
+    factItems[factIndex].setActive(false);
+    setState(() {
+      var fact = _facts[factIndex];
+      _facts[factIndex] = _facts[playerIndex];
+      _facts[playerIndex] = fact;
+      lastTappedItemData = null;
+      generateItems();
+    });
+  }
+
+  void generateItems() {
+    playerItems = List<PlayerListItem>.generate(
+      _players.length,
+      (int index) => PlayerListItem(
+          key: UniqueKey(),
+          player: _players[index].value,
+          index: index,
+          tappedCallback: _tapItemCallback),
+    );
+    factItems = List<FactListItem>.generate(
+      _facts.length,
+      (int index) => FactListItem(
+        key: UniqueKey(),
+        fact: _facts[index].value,
+        index: index,
+        tappedCallback: _tapItemCallback,
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _players = widget.players;
+    _facts = widget.facts;
+    generateItems();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DelayedReorderableListener(
-      delay: Duration(milliseconds: 250),
-      child: Opacity(
-        opacity: state == ReorderableItemState.placeholder ? 0.0 : 1.0,
-        child: SizedBox(
-          height: MediaQuery.of(context).size.width / 2.5,
-          width: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              FittedBox(
-                fit: BoxFit.cover,
-                child: Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.rotationY(pi),
-                    child: player.image),
-              ),
-              Container(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment(.0, 0.8),
-                      end: Alignment(.0, 0.3),
-                      colors: [
-                        Colors.black.withOpacity(0.5),
-                        Colors.black.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Container(
-                    child: Text(
-                      player.name,
-                      style: Theme.of(context).textTheme.subtitle1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return SizedBox.expand(
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              children: playerItems
+                  .map((playerItem) =>
+                      Flexible(child: playerItem as PlayerListItem))
+                  .toList(),
+            ),
           ),
-        ),
+          Expanded(
+            child: Column(
+              children: factItems
+                  .map((factItem) => Flexible(child: factItem as FactListItem))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class FactListItem extends StatelessWidget {
-  final bool isFirst;
-  final bool isLast;
-  final ReorderableItemState state;
-  final String fact;
-  FactListItem(
-      {@required this.fact,
-      @required this.state,
-      @required this.isFirst,
-      @required this.isLast});
+class SetActiveController {
+  void Function(bool active) setActiveCallback;
+}
+
+abstract class MatchableItem {
+  void setActive(bool active);
+}
+
+class PlayerListItem extends StatefulWidget implements MatchableItem {
+  final PlayerData player;
+  final SetActiveController setActiveController = SetActiveController();
+
+  final int index;
+  final ListItemTappedCallback tappedCallback;
+
+  PlayerListItem({
+    @required this.player,
+    @required this.index,
+    @required this.tappedCallback,
+    @required Key key,
+  }) : super(key: key);
+
+  void setActive(bool active) => setActiveController.setActiveCallback(active);
+
+  @override
+  _PlayerListItemState createState() => _PlayerListItemState(
+      setActiveController: setActiveController, player: player);
+}
+
+class _PlayerListItemState extends State<PlayerListItem> {
+  bool active = false;
+
+  _PlayerListItemState(
+      {SetActiveController setActiveController, PlayerData player}) {
+    print('setActiveController_' + player.name);
+    setActiveController.setActiveCallback = _setActive;
+  }
+
+  void _setActive(bool active) {
+    setState(() {
+      this.active = active;
+    });
+  }
+
+  void _onTap() =>
+      widget.tappedCallback(MatchItemData(widget.index, ItemType.playerItem));
 
   Widget build(BuildContext context) {
-    final bool isPlaceholder = state == ReorderableItemState.placeholder;
-    return DelayedReorderableListener(
-      delay: Duration(milliseconds: 250),
-      child: Opacity(
-        opacity: state == ReorderableItemState.placeholder ? 0.0 : 1.0,
-        child: SizedBox(
-          height: MediaQuery.of(context).size.width / 2.5,
-          width: double.infinity,
-          child: DecoratedBox(
+    return SizedBox(
+      height: MediaQuery.of(context).size.width / 2.5,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          FittedBox(
+            fit: BoxFit.cover,
+            child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.rotationY(pi),
+                child: widget.player.image),
+          ),
+          Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                border: Border(
-                  top: !isFirst && !isPlaceholder
-                      ? Divider.createBorderSide(context, width: 1.0)
-                      : BorderSide.none,
-                  bottom: !isLast && !isPlaceholder
-                      ? Divider.createBorderSide(context, width: 1.0)
-                      : BorderSide.none,
+                gradient: LinearGradient(
+                  begin: Alignment(.0, 0.8),
+                  end: Alignment(.0, 0.3),
+                  colors: [
+                    Colors.black.withOpacity(0.5),
+                    Colors.black.withOpacity(0.0),
+                  ],
                 ),
               ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: AutoSizeText(
-                    fact,
-                    style: Theme.of(context).textTheme.headline5,
-                    textAlign: TextAlign.center,
-                  ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Container(
+                child: Text(
+                  widget.player.name,
+                  style: Theme.of(context).textTheme.subtitle1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
-              )),
-        ),
+              ),
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: active ? 0.3 : 0.0,
+            duration: Duration(milliseconds: 250),
+            child: Container(color: Colors.purple[200]),
+          ),
+          Positioned.fill(
+            child: Material(
+                color: Colors.transparent, child: InkWell(onTap: _onTap)),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class FactListItem extends StatefulWidget implements MatchableItem {
+  final String fact;
+  final SetActiveController setActiveController = SetActiveController();
+
+  final int index;
+  final ListItemTappedCallback tappedCallback;
+
+  FactListItem({
+    @required this.fact,
+    @required this.index,
+    @required this.tappedCallback,
+    @required Key key,
+  }) : super(key: key);
+
+  void setActive(bool active) => setActiveController.setActiveCallback(active);
+
+  @override
+  _FactListItemState createState() =>
+      _FactListItemState(setActiveController: setActiveController);
+}
+
+class _FactListItemState extends State<FactListItem> {
+  bool active = false;
+  _FactListItemState({SetActiveController setActiveController}) {
+    setActiveController.setActiveCallback = _setActive;
+  }
+
+  void _setActive(bool active) {
+    setState(() {
+      this.active = active;
+    });
+  }
+
+  void _onTap() =>
+      widget.tappedCallback(MatchItemData(widget.index, ItemType.factItem));
+
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.width / 2.5,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: AutoSizeText(
+                  widget.fact,
+                  style: Theme.of(context).textTheme.headline5,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: active ? 0.3 : 0.0,
+            duration: Duration(milliseconds: 250),
+            child: Container(color: Colors.purple[200]),
+          ),
+          Positioned.fill(
+              child: Material(
+                  color: Colors.transparent, child: InkWell(onTap: _onTap)))
+        ],
       ),
     );
   }
