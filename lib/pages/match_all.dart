@@ -160,12 +160,75 @@ class MatchableLists extends StatefulWidget {
 
 typedef ListItemTappedCallback = void Function(MatchItemData itemData);
 
-class _MatchableListsState extends State<MatchableLists> {
+class _MatchableListsState extends State<MatchableLists>
+    with SingleTickerProviderStateMixin {
   List<MapEntry<int, PlayerData>> _players;
   List<MapEntry<int, String>> _facts;
   List<MatchableItem> playerItems, factItems;
 
   MatchItemData lastTappedItemData;
+
+  AnimationController _controller;
+  List<Animation<Offset>> animations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addStatusListener((status) {
+            print('animation status changed:::${status.toString()}');
+            if (status == AnimationStatus.completed) {
+              setState(() => generateItems());
+              initializeAnimations();
+              _controller.reset();
+            }
+          });
+
+    _players = widget.players;
+    _facts = widget.facts;
+    initializeAnimations();
+    generateItems();
+  }
+
+  void initializeAnimations() {
+    animations = List<Animation<Offset>>.generate(
+        _players.length,
+        (_) => Tween<Offset>(begin: Offset.zero, end: Offset.zero)
+            .animate(_controller));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              children: List<Widget>.generate(
+                  playerItems.length,
+                  (index) =>
+                      Flexible(child: playerItems[index] as PlayerListItem)),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: List<Widget>.generate(
+                factItems.length,
+                (index) => Flexible(
+                    child: SlideTransition(
+                  position: animations[index],
+                  child: factItems[index] as FactListItem,
+                )),
+              ).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _tapItemCallback(MatchItemData itemData) {
     print('tapItemCallback (${itemData.index}, ${itemData.type.toString()})');
@@ -189,25 +252,40 @@ class _MatchableListsState extends State<MatchableLists> {
 
   void swapItems(
       MatchItemData targetItemData, MatchItemData subTargetItemData) {
-    var playerIndex = targetItemData.type == ItemType.playerItem
+    final playerIndex = targetItemData.type == ItemType.playerItem
         ? targetItemData.index
         : subTargetItemData.index;
-    var factIndex = targetItemData.type == ItemType.factItem
+    final factIndex = targetItemData.type == ItemType.factItem
         ? targetItemData.index
         : subTargetItemData.index;
     if (playerIndex == factIndex) return;
     playerItems[playerIndex].setActive(false);
     factItems[factIndex].setActive(false);
+    print('swap items: $playerIndex <-> $factIndex');
+    var fact = _facts[factIndex];
+    _facts[factIndex] = _facts[playerIndex];
+    _facts[playerIndex] = fact;
+    lastTappedItemData = null;
     setState(() {
-      var fact = _facts[factIndex];
-      _facts[factIndex] = _facts[playerIndex];
-      _facts[playerIndex] = fact;
-      lastTappedItemData = null;
-      generateItems();
+      animations[factIndex] = Tween<Offset>(
+              begin: Offset.zero,
+              end: Offset(0.0, (playerIndex - factIndex).toDouble()))
+          .animate(
+        CurvedAnimation(curve: Curves.easeInOut, parent: _controller),
+      );
+      animations[playerIndex] = Tween<Offset>(
+              begin: Offset.zero,
+              end: Offset(0.0, (factIndex - playerIndex).toDouble()))
+          .animate(
+        CurvedAnimation(curve: Curves.easeInOut, parent: _controller),
+      );
+      _controller.forward();
+      // generateItems();
     });
   }
 
   void generateItems() {
+    print('generateItems!!!!');
     playerItems = List<PlayerListItem>.generate(
       _players.length,
       (int index) => PlayerListItem(
@@ -223,41 +301,8 @@ class _MatchableListsState extends State<MatchableLists> {
         fact: _facts[index].value,
         index: index,
         tappedCallback: _tapItemCallback,
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _players = widget.players;
-    _facts = widget.facts;
-    generateItems();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              children: playerItems
-                  .map((playerItem) =>
-                      Flexible(child: playerItem as PlayerListItem))
-                  .toList(),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              children: factItems
-                  .map((factItem) => Flexible(child: factItem as FactListItem))
-                  .toList(),
-            ),
-          ),
-        ],
+        isFirst: index == 0,
+        isLast: index == _facts.length - 1,
       ),
     );
   }
@@ -373,13 +418,17 @@ class FactListItem extends StatefulWidget implements MatchableItem {
 
   final int index;
   final ListItemTappedCallback tappedCallback;
+  final bool isFirst;
+  final bool isLast;
 
-  FactListItem({
-    @required this.fact,
-    @required this.index,
-    @required this.tappedCallback,
-    @required Key key,
-  }) : super(key: key);
+  FactListItem(
+      {@required Key key,
+      @required this.fact,
+      @required this.index,
+      @required this.tappedCallback,
+      @required this.isFirst,
+      @required this.isLast})
+      : super(key: key);
 
   void setActive(bool active) => setActiveController.setActiveCallback(active);
 
@@ -413,6 +462,13 @@ class _FactListItemState extends State<FactListItem> {
           DecoratedBox(
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
+              border: Border(
+                  top: !widget.isFirst
+                      ? BorderSide(color: Colors.grey)
+                      : BorderSide.none,
+                  bottom: !widget.isLast
+                      ? BorderSide(color: Colors.grey)
+                      : BorderSide.none),
             ),
             child: Center(
               child: Padding(
@@ -431,8 +487,9 @@ class _FactListItemState extends State<FactListItem> {
             child: Container(color: Colors.purple[200]),
           ),
           Positioned.fill(
-              child: Material(
-                  color: Colors.transparent, child: InkWell(onTap: _onTap)))
+            child: Material(
+                color: Colors.transparent, child: InkWell(onTap: _onTap)),
+          )
         ],
       ),
     );
