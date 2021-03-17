@@ -8,8 +8,6 @@ import 'package:factum/widgets/matchable_lists.dart';
 import 'package:factum/widgets/wait_next_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_reorderable_list/flutter_reorderable_list.dart';
-import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 class MatchAllGame extends StatelessWidget {
@@ -41,15 +39,9 @@ class _MatchAllState extends State<MatchAll> {
   List<MapEntry<int, PlayerData>> _players;
   List<MapEntry<int, String>> _facts;
 
-  LinkedScrollControllerGroup _controllers;
-  ScrollController _pController, _fController;
-
   @override
   void initState() {
     super.initState();
-    _controllers = LinkedScrollControllerGroup();
-    _pController = _controllers.addAndGet();
-    _fController = _controllers.addAndGet();
     var questions = Provider.of<MatchAllFriendsNotifier>(context, listen: false)
         .model
         .getQuestions();
@@ -59,8 +51,6 @@ class _MatchAllState extends State<MatchAll> {
 
   @override
   void dispose() {
-    _pController.dispose();
-    _fController.dispose();
     super.dispose();
   }
 
